@@ -84,9 +84,6 @@ class ConstraintViolationsMapper extends Nette\Object
 
 			if ($meta->isSingleValuedAssociation($field)) {
 				$this->validateContainer($child, $meta->getFieldValue($entity, $field));
-
-			} else {
-				throw new NotImplementedException("To many relation is not yet implemented");
 			}
 		}
 	}
