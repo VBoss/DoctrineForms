@@ -47,12 +47,6 @@ trait EntityForm
 	 */
 	private $formBuilder;
 
-	/**
-	 * @var object
-	 */
-	private $entity;
-
-
 
 	/**
 	 * @param EntityFormMapper $mapper
