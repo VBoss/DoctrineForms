@@ -65,13 +65,14 @@ class TextControl extends Nette\Object implements IComponentMapper
 			return FALSE;
 		}
 
-		if ($meta->hasField($name = $component->getOption(self::FIELD_NAME, $component->getName()))) {
+		$name = $component->getOption(self::FIELD_NAME, $component->getName());
+		if ($this->hasField($meta, $name)) {
 			$value = $this->accessor->getValue($entity, $name);
 
 			if ($value instanceof \Pd\Base\Entity) {
 				$component->setValue($value->getId());
 			} else {
-				$component->setValue($this->accessor->getValue($entity, $name));
+				$component->setValue($value);
 			}
 
 			return TRUE;
@@ -119,6 +120,26 @@ class TextControl extends Nette\Object implements IComponentMapper
 		$meta = $this->em->getClassMetadata(is_object($entity) ? get_class($entity) : $entity);
 		$targetClass = $meta->getAssociationTargetClass($relationName);
 		return $this->em->getClassMetadata($targetClass);
+	}
+
+
+
+	/**
+	 * @param ClassMetadata $meta
+	 * @param string $name
+	 * @return bool
+	 */
+	private function hasField(ClassMetadata $meta, $name)
+	{
+		if ($meta->hasField($name)) {
+			return TRUE;
+		}
+
+		if ($meta->discriminatorColumn && $meta->discriminatorColumn['name'] === $name) {
+			return TRUE;
+		}
+
+		return FALSE;
 	}
 
 
