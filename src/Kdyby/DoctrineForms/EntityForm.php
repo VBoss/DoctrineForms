@@ -47,6 +47,11 @@ trait EntityForm
 	 */
 	private $formBuilder;
 
+	/**
+	 * @var \Closure
+	 */
+	private $entityFactory;
+
 
 	/**
 	 * @param EntityFormMapper $mapper
@@ -175,6 +180,14 @@ trait EntityForm
 
 
 
+	public function setEntityFactory($callable)
+	{
+		$this->entityFactory = Nette\Utils\Callback::closure($callable);
+		return $this;
+	}
+
+
+
 	public function fireEvents()
 	{
 		/** @var EntityForm|UI\Form $this */
@@ -186,6 +199,10 @@ trait EntityForm
 		$this->validate();
 
 		if ($this->isValid()) {
+			if (is_callable($this->entityFactory)) {
+				$this->entity = Nette\Utils\Callback::invokeArgs($this->entityFactory, [$this]);
+			}
+
 			$this->getEntityMapper()->save($this->entity, $this);
 		}
 
