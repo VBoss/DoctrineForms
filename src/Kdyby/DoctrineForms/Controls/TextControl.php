@@ -182,7 +182,14 @@ class TextControl extends Nette\Object implements IComponentMapper
 		}
 
 		if ($meta->hasField($name = $component->getOption(self::FIELD_NAME, $component->getName()))) {
-			$this->accessor->setValue($entity, $name, $component->getValue());
+			$columnMeta = $meta->getFieldMapping($name);
+			$value = $component->getValue();
+
+			if ( ! is_numeric($value) && ! $value && $columnMeta['nullable']) {
+				$value = NULL;
+			}
+
+			$this->accessor->setValue($entity, $name, $value);
 			return TRUE;
 		}
 
