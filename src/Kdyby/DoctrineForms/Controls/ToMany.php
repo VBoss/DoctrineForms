@@ -56,12 +56,25 @@ class ToMany extends Nette\Object implements IComponentMapper
 		}
 
 		$em = $this->mapper->getEntityManager();
-		$UoW = $em->getUnitOfWork();
 
 		$component->bindCollection($entity, $collection);
 		foreach ($collection as $relation) {
-			if ($id = $UoW->getSingleIdentifierValue($relation)) {
-				$this->mapper->load($relation, $component[$id]);
+			$relationClassMetadata = $em->getClassMetadata(get_class($relation));
+
+			if ($entityIdentifier = $this->getEntityIdentifier($relation)) {
+				$relationComponentIdentifier = $component->getPopulateBy()
+					? $relationClassMetadata->getFieldValue($relation, $component->getPopulateBy())
+					: $entityIdentifier;
+
+				/* @var Nette\Forms\Container $relationContainer */
+				$relationContainer = $component[$relationComponentIdentifier];
+				$this->mapper->load($relation, $relationContainer);
+
+				$relationContainer
+					->addHidden(Kdyby\DoctrineForms\IComponentMapper::IDENTIFIER)
+					->setDefaultValue($entityIdentifier)
+				;
+
 				continue;
 			}
 
@@ -93,11 +106,11 @@ class ToMany extends Nette\Object implements IComponentMapper
 
 		/** @var Nette\Forms\Container $container */
 		foreach ($component->getComponents(FALSE, 'Nette\Forms\Container') as $container) {
-			$isNew = substr($container->getName(), 0, strlen(ToManyContainer::NEW_PREFIX)) === ToManyContainer::NEW_PREFIX;
-			$name = $isNew ? substr($container->getName(), strlen(ToManyContainer::NEW_PREFIX)) : $container->getName();
+			$identifier = $this->getIdentifier($container);
 
-			$relation = $collection->filter(function ($entity) use ($UoW, $name) {
-				return $UoW->getSingleIdentifierValue($entity) == $name; // intentionally ==
+			$relation = $collection->filter(function ($entity) use ($UoW, $identifier) {
+				$entityIdentifier = $this->getEntityIdentifier($entity);
+				return $entityIdentifier == $identifier; // intentionally ==
 			})->first();
 
 			if (!$relation) { // entity was added from the client
@@ -105,7 +118,7 @@ class ToMany extends Nette\Object implements IComponentMapper
 					continue;
 				}
 
-				$collection[$name] = $relation = $relationMeta->newInstance();
+				$collection[] = $relation = $relationMeta->newInstance();
 			}
 
 			$this->mapper->save($relation, $container);
@@ -135,6 +148,47 @@ class ToMany extends Nette\Object implements IComponentMapper
 		}
 
 		return $collection;
+	}
+
+
+
+	/**
+	 * @param object $entity
+	 * @return int|array
+	 */
+	private function getEntityIdentifier($entity)
+	{
+		$em = $this->mapper->getEntityManager();
+		$UoW = $em->getUnitOfWork();
+
+		$class = $em->getClassMetadata(get_class($entity));
+
+		if ( ! $class->isIdentifierComposite) {
+			return $UoW->getSingleIdentifierValue($entity);
+		}
+
+		$identifiers = $UoW->isInIdentityMap($entity)
+			? $UoW->getEntityIdentifier($entity)
+			: $class->getIdentifierValues($entity);
+
+		return implode('_', array_values($identifiers));
+	}
+
+
+
+	/**
+	 * @param Nette\Forms\Container $container
+	 * @param string $identifierName
+	 * @return string
+	 */
+	private function getIdentifier(Nette\Forms\Container $container, $identifierName = IComponentMapper::IDENTIFIER)
+	{
+		if (isset($container->components[$identifierName])) {
+			return $container->components[$identifierName]
+				->getValue();
+		}
+
+		return NULL;
 	}
 
 }

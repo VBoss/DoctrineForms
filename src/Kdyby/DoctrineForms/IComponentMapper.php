@@ -27,6 +27,8 @@ interface IComponentMapper
 	const ITEMS_TITLE = 'items.title';
 	const ITEMS_FILTER = 'items.filter';
 	const ITEMS_ORDER = 'items.order';
+	const IDENTIFIER = '_identifier_';
+
 
 
 
