@@ -56,13 +56,17 @@ class ToManyContainer extends Nette\Forms\Container
 	 */
 	private $disableAdding = FALSE;
 
+	/**
+	 * @var string
+	 */
+	private $populateBy;
 
 
-	public function __construct($containerFactory)
+	public function __construct($containerFactory = NULL)
 	{
 		parent::__construct();
 
-		$this->containerFactory = callback($containerFactory);
+		$this->containerFactory = $containerFactory ? callback($containerFactory) : NULL;
 		$this->collection = new ArrayCollection();
 	}
 
@@ -155,6 +159,28 @@ class ToManyContainer extends Nette\Forms\Container
 	public function getCollection()
 	{
 		return $this->collection;
+	}
+
+
+
+	/**
+	 * @param string $property
+	 * @return ToManyContainer
+	 */
+	public function setPopulateBy($property)
+	{
+		$this->populateBy = $property;
+		return $this;
+	}
+
+
+
+	/**
+	 * @return string|NULL
+	 */
+	public function getPopulateBy()
+	{
+		return $this->populateBy;
 	}
 
 
